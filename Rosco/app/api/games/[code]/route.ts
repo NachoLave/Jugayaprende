@@ -60,6 +60,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ code: st
             game.reviewIndex = reviewIndex;
         }
 
+        // Handle Score Update
+        const { player, score } = await req.json();
+        if (player && score !== undefined) {
+            const playerIndex = game.players.findIndex((p: any) => p.name === player);
+            if (playerIndex !== -1) {
+                game.players[playerIndex].score = score;
+                // Update lastPointsEarned if needed, or just score
+            }
+        }
+
         // Handle Trivia-specific actions
         if (triviaAction && config.type === 'TRIVIA') {
             if (triviaAction === 'OPEN_BUZZER') {

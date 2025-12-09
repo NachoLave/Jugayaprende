@@ -103,9 +103,7 @@ export default function BattleshipGame({ config, onFinish, onScoreUpdate }: Batt
 
     // Initialize Timer
     useEffect(() => {
-        if (config.timeLimit) {
-            setTimeLeft(config.timeLimit);
-        }
+        setTimeLeft(config.timeLimit || 300);
     }, [config.timeLimit]);
 
     // Timer Logic

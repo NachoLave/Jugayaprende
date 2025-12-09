@@ -119,6 +119,18 @@ export default function GamePage() {
         }
     };
 
+    const handleScoreUpdate = async (score: number) => {
+        try {
+            await fetch(`/api/games/${code}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player, score }),
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     // Render specific game based on type
     const type = gameData.config.type;
 
@@ -127,7 +139,7 @@ export default function GamePage() {
     }
 
     if (type === 'BATTLESHIP') {
-        return <BattleshipGame config={gameData.config.questions} player={player!} code={code} onFinish={handleFinish} />;
+        return <BattleshipGame config={gameData.config.questions} player={player!} code={code} onFinish={handleFinish} onScoreUpdate={handleScoreUpdate} />;
     }
 
     if (type === 'MEMORY') {
