@@ -153,7 +153,7 @@ export default function HostKahootGame({ gameData, code }: HostKahootGameProps) 
     }
 
     if (phase === 'ANSWERING') {
-        const answersCount = Object.values(kahootState.answers || {}).reduce((a: any, b: any) => a + b, 0);
+        const answersCount: number = Object.values(kahootState.answers || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
 
         return (
             <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col">
