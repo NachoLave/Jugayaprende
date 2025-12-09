@@ -1,43 +1,43 @@
-11:20:42.736 Running build in Washington, D.C., USA (East) – iad1
-11:20:42.737 Build machine configuration: 2 cores, 8 GB
-11:20:42.870 Cloning github.com/NachoLave/Jugayaprende (Branch: main, Commit: 458f5d5)
-11:20:43.092 Cloning completed: 222.000ms
-11:20:44.005 Restored build cache from previous deployment (Ev1uDsbTpVFB2fGdknzHeRSLmQ3U)
-11:20:44.900 Running "vercel build"
-11:20:45.350 Vercel CLI 49.1.2
-11:20:45.650 Installing dependencies...
-11:20:47.199 
-11:20:47.200 up to date in 1s
-11:20:47.200 
-11:20:47.200 151 packages are looking for funding
-11:20:47.201   run `npm fund` for details
-11:20:47.227 Detected Next.js version: 14.2.18
-11:20:47.231 Running "npm run build"
-11:20:47.398 
-11:20:47.399 > rosco-app@0.1.0 build
-11:20:47.399 > next build
-11:20:47.400 
-11:20:48.099   ▲ Next.js 14.2.18
-11:20:48.100 
-11:20:48.119    Creating an optimized production build ...
-11:20:56.089  ✓ Compiled successfully
-11:20:56.090    Linting and checking validity of types ...
-11:20:56.380 
-11:20:56.381    We detected TypeScript in your project and reconfigured your tsconfig.json file for you. Strict-mode is set to false by default.
-11:20:56.381    The following mandatory changes were made to your tsconfig.json:
-11:20:56.381 
-11:20:56.382    	- jsx was set to preserve (next.js implements its own optimized jsx transform)
-11:20:56.382 
-11:21:02.951 Failed to compile.
-11:21:02.951 
-11:21:02.951 ./models/GameSession.ts:26:9
-11:21:02.952 Type error: An object literal cannot have multiple properties with the same name.
-11:21:02.952 
-11:21:02.952 [0m [90m 24 |[39m         lastAnswerCorrect[33m:[39m [33mBoolean[39m[33m,[39m[0m
-11:21:02.952 [0m [90m 25 |[39m         buzzQueue[33m:[39m [[33mString[39m][33m,[39m[0m
-11:21:02.953 [0m[31m[1m>[22m[39m[90m 26 |[39m         buzzQueue[33m:[39m [[33mString[39m][33m,[39m[0m
-11:21:02.953 [0m [90m    |[39m         [31m[1m^[22m[39m[0m
-11:21:02.953 [0m [90m 27 |[39m         attemptedPlayers[33m:[39m [[33mString[39m][33m,[39m[0m
-11:21:02.954 [0m [90m 28 |[39m         buzzerEnableTime[33m:[39m [33mDate[39m[33m,[39m [90m// Timestamp when buzzer automatically opens[39m[0m
-11:21:02.954 [0m [90m 29 |[39m     }[33m,[39m[0m
-11:21:03.004 Error: Command "npm run build" exited with 1
+15:58:33.301 Running build in Washington, D.C., USA (East) – iad1
+15:58:33.302 Build machine configuration: 2 cores, 8 GB
+15:58:33.467 Cloning github.com/NachoLave/Jugayaprende (Branch: main, Commit: f9346b5)
+15:58:33.712 Cloning completed: 245.000ms
+15:58:34.460 Restored build cache from previous deployment (78XVtDZKqZ9ZKwbwXAi6prs4aQwe)
+15:58:35.048 Running "vercel build"
+15:58:35.480 Vercel CLI 49.1.2
+15:58:35.793 Installing dependencies...
+15:58:36.896 
+15:58:36.897 up to date in 887ms
+15:58:36.897 
+15:58:36.898 151 packages are looking for funding
+15:58:36.898   run `npm fund` for details
+15:58:36.926 Detected Next.js version: 14.2.18
+15:58:36.931 Running "npm run build"
+15:58:37.043 
+15:58:37.043 > rosco-app@0.1.0 build
+15:58:37.044 > next build
+15:58:37.044 
+15:58:37.843   ▲ Next.js 14.2.18
+15:58:37.844 
+15:58:37.865    Creating an optimized production build ...
+15:58:46.700  ✓ Compiled successfully
+15:58:46.702    Linting and checking validity of types ...
+15:58:47.017 
+15:58:47.018    We detected TypeScript in your project and reconfigured your tsconfig.json file for you. Strict-mode is set to false by default.
+15:58:47.018    The following mandatory changes were made to your tsconfig.json:
+15:58:47.018 
+15:58:47.018    	- jsx was set to preserve (next.js implements its own optimized jsx transform)
+15:58:47.019 
+15:58:54.509 Failed to compile.
+15:58:54.511 
+15:58:54.511 ./app/play/[code]/components/HangmanGame.tsx:46:26
+15:58:54.511 Type error: Parameter 'prev' implicitly has an 'any' type.
+15:58:54.512 
+15:58:54.512 [0m [90m 44 |[39m[0m
+15:58:54.512 [0m [90m 45 |[39m         [36mconst[39m timer [33m=[39m setInterval(() [33m=>[39m {[0m
+15:58:54.512 [0m[31m[1m>[22m[39m[90m 46 |[39m             setTimeLeft((prev) [33m=>[39m {[0m
+15:58:54.512 [0m [90m    |[39m                          [31m[1m^[22m[39m[0m
+15:58:54.512 [0m [90m 47 |[39m                 [36mif[39m (prev [33m<=[39m [35m1[39m) {[0m
+15:58:54.513 [0m [90m 48 |[39m                     clearInterval(timer)[33m;[39m[0m
+15:58:54.513 [0m [90m 49 |[39m                     finishGame([32m'LOST'[39m)[33m;[39m[0m
+15:58:54.597 Error: Command "npm run build" exited with 1

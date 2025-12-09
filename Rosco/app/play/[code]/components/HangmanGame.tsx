@@ -43,7 +43,7 @@ export default function HangmanGame({ data, player, code, onFinish }: HangmanGam
         if (status !== 'PLAYING') return;
 
         const timer = setInterval(() => {
-            setTimeLeft((prev) => {
+            setTimeLeft((prev: number) => {
                 if (prev <= 1) {
                     clearInterval(timer);
                     finishGame('LOST');
