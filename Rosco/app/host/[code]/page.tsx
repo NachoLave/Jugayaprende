@@ -14,6 +14,12 @@ export default function HostPage() {
     const [gameData, setGameData] = useState<any>(null);
     const [triviaTimer, setTriviaTimer] = useState(20);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
+    const [currentTime, setCurrentTime] = useState(Date.now());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     const code = params.code as string;
 
@@ -280,6 +286,12 @@ export default function HostPage() {
 
     // BATTLESHIP HOST VIEW
     if (config.type === 'BATTLESHIP') {
+        // Calculate time left
+        const timeLimit = config.questions.timeLimit || 300;
+        const startTime = gameData.startTime ? new Date(gameData.startTime).getTime() : currentTime;
+        const elapsed = Math.floor((currentTime - startTime) / 1000);
+        const timeLeft = Math.max(0, timeLimit - elapsed);
+
         return (
             <div className="min-h-screen bg-slate-900 text-white p-8">
                 <div className="max-w-4xl mx-auto">
@@ -288,11 +300,22 @@ export default function HostPage() {
                             <h1 className="text-4xl font-bold mb-2">{config.title}</h1>
                             <p className="text-xl text-gray-400">Código: <span className="text-yellow-400 font-mono text-3xl font-bold ml-2">{code}</span></p>
                         </div>
-                        <div className="text-right">
-                            <div className="text-sm text-gray-400 mb-1">Estado</div>
-                            <div className="text-green-400 font-bold text-xl flex items-center gap-2">
-                                <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                                EN JUEGO
+                        <div className="flex items-center gap-6">
+                            {/* Timer Display */}
+                            <div className={cn(
+                                "px-6 py-3 rounded-xl border border-white/10 font-mono font-bold text-3xl flex items-center gap-3 shadow-lg",
+                                timeLeft < 30 ? "bg-red-900/50 text-red-400 animate-pulse border-red-500/50" : "bg-white/5 text-white"
+                            )}>
+                                <span className="text-sm text-gray-400 font-sans font-normal">TIEMPO</span>
+                                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                            </div>
+
+                            <div className="text-right">
+                                <div className="text-sm text-gray-400 mb-1">Estado</div>
+                                <div className="text-green-400 font-bold text-xl flex items-center gap-2">
+                                    <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                                    EN JUEGO
+                                </div>
                             </div>
                         </div>
                     </div>
