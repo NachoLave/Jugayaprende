@@ -9,6 +9,8 @@ interface MemoryGameProps {
     config: {
         pairs: { a: string, b: string }[];
     };
+    player: string;
+    code: string;
     onFinish: (score: number) => void;
 }
 

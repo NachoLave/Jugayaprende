@@ -11,6 +11,8 @@ interface BattleshipGameProps {
         ships: { x: number, y: number, size: number, orientation: 'H' | 'V' }[];
         pool: { question: string, answer: string, type?: 'TEXT' | 'CHOICE', options?: string[] }[];
     };
+    player: string;
+    code: string;
     onFinish: (score: number) => void;
     onScoreUpdate?: (score: number) => void;
 }
