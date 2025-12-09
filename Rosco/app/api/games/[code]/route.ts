@@ -80,6 +80,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ code: st
                 game.triviaState.buzzedPlayer = null;
                 game.triviaState.buzzQueue = [];
                 game.triviaState.attemptedPlayers = [];
+                // Set buzzer to open in 5 seconds
+                game.triviaState.buzzerEnableTime = new Date(Date.now() + 5000);
             }
             game.markModified('triviaState');
         }

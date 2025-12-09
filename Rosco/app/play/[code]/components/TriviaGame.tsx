@@ -27,20 +27,29 @@ export default function TriviaGame({ data, player, code }: TriviaGameProps) {
     const isMeBuzzed = buzzedPlayer === player;
     const isMeAttempted = triviaState?.attemptedPlayers?.includes(player);
 
-    // Sync timer reset on question change
+    // Sync timer with server timestamp
     useEffect(() => {
-        setLocalTimer(20);
-        setSelectedAnswer(null);
-        setHasAnswered(false);
-    }, [triviaState?.currentQuestionIndex]);
+        if (triviaState?.buzzerEnableTime) {
+            const enableTime = new Date(triviaState.buzzerEnableTime).getTime();
+            const now = Date.now();
+            const diff = Math.ceil((enableTime - now) / 1000);
+            setLocalTimer(Math.max(0, diff));
+        } else {
+            setLocalTimer(0);
+        }
+    }, [triviaState?.buzzerEnableTime]);
 
-    // Local countdown
+    // Local countdown tick
     useEffect(() => {
-        if (localTimer > 0 && !isBuzzerOpen && !buzzedPlayer) {
-            const timer = setInterval(() => setLocalTimer(t => t - 1), 1000);
+        if (localTimer > 0) {
+            const timer = setInterval(() => setLocalTimer(t => Math.max(0, t - 1)), 1000);
             return () => clearInterval(timer);
         }
-    }, [localTimer, isBuzzerOpen, buzzedPlayer]);
+    }, [localTimer]);
+
+    // Check if buzzer is enabled by time
+    const isTimerPassed = triviaState?.buzzerEnableTime && Date.now() >= new Date(triviaState.buzzerEnableTime).getTime();
+    const canBuzz = isBuzzerOpen || isTimerPassed || (!buzzedPlayer && isTimerPassed);
 
     const handleBuzz = async () => {
         if (isMeInQueue || isMeAttempted) return;
@@ -127,7 +136,7 @@ export default function TriviaGame({ data, player, code }: TriviaGameProps) {
                 {/* Game State Views */}
 
                 {/* 1. Waiting to Buzz (Timer running) */}
-                {!isBuzzerOpen && !buzzedPlayer && localTimer > 0 && (
+                {!canBuzz && !buzzedPlayer && localTimer > 0 && (
                     <div className="text-center">
                         <div className="text-6xl font-mono font-bold text-blue-400 mb-4">{localTimer}</div>
                         <p className="text-gray-400 animate-pulse">Prepárate para pulsar...</p>
@@ -135,7 +144,7 @@ export default function TriviaGame({ data, player, code }: TriviaGameProps) {
                 )}
 
                 {/* 2. Buzzer Available */}
-                {(isBuzzerOpen || (!buzzedPlayer && localTimer === 0)) && !isMeInQueue && !isMeAttempted && (
+                {canBuzz && !isMeInQueue && !isMeAttempted && (
                     <button
                         onClick={handleBuzz}
                         className="w-48 h-48 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 transition-all shadow-[0_0_50px_rgba(220,38,38,0.5)] flex flex-col items-center justify-center animate-bounce"

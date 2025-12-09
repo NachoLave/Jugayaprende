@@ -42,20 +42,18 @@ export default function HostPage() {
         return () => clearInterval(interval);
     }, [code]);
 
-    // Trivia Timer Logic
+    // Trivia Timer Logic (Sync with Server)
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (isTimerRunning && triviaTimer > 0) {
-            interval = setInterval(() => {
-                setTriviaTimer((prev) => prev - 1);
-            }, 1000);
-        } else if (triviaTimer === 0 && isTimerRunning) {
+        if (gameData?.triviaState?.buzzerEnableTime) {
+            const enableTime = new Date(gameData.triviaState.buzzerEnableTime).getTime();
+            const diff = Math.ceil((enableTime - currentTime) / 1000);
+            setTriviaTimer(Math.max(0, diff));
+            setIsTimerRunning(diff > 0);
+        } else {
+            setTriviaTimer(0);
             setIsTimerRunning(false);
-            // Auto-open buzzer
-            handleTriviaAction('OPEN_BUZZER');
         }
-        return () => clearInterval(interval);
-    }, [isTimerRunning, triviaTimer]);
+    }, [gameData?.triviaState?.buzzerEnableTime, currentTime]);
 
     const startGame = async () => {
         await fetch(`/api/games/${code}/start`, { method: 'POST' });
@@ -69,8 +67,7 @@ export default function HostPage() {
         });
 
         if (action === 'NEXT_QUESTION') {
-            setTriviaTimer(5); // Reduced to 5 seconds
-            setIsTimerRunning(true);
+            // Timer is now handled by server timestamp
         }
     };
 
@@ -181,10 +178,7 @@ export default function HostPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
                                 {currentQ.options?.map((opt: string, i: number) => (
-                                    <div key={i} className={cn(
-                                        "p-4 rounded-xl border-2 text-lg font-medium transition-all",
-                                        i === 0 ? "border-green-500/50 bg-green-500/10 text-green-400" : "border-white/10 bg-white/5 text-gray-400"
-                                    )}>
+                                    <div key={i} className="p-4 rounded-xl border-2 border-white/10 bg-white/5 text-gray-400 text-lg font-medium transition-all">
                                         {opt}
                                     </div>
                                 ))}
@@ -252,10 +246,10 @@ export default function HostPage() {
                         {/* Leaderboard */}
                         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex-1">
                             <h3 className="text-gray-400 font-bold mb-4 flex items-center gap-2">
-                                <Trophy className="w-5 h-5" /> Ranking
+                                <Trophy className="w-5 h-5" /> Top 5 Ranking
                             </h3>
                             <div className="space-y-3">
-                                {players.sort((a: any, b: any) => b.score - a.score).map((p: any, i: number) => (
+                                {players.sort((a: any, b: any) => b.score - a.score).slice(0, 5).map((p: any, i: number) => (
                                     <div key={i} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
                                         <div className="flex items-center gap-3">
                                             <span className={cn("font-bold w-6", i === 0 ? "text-yellow-400" : "text-gray-500")}>#{i + 1}</span>
