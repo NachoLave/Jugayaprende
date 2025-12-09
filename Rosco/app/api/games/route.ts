@@ -41,6 +41,17 @@ export async function POST(req: Request) {
             exists = await GameSession.findOne({ code });
         }
 
+        // Cleanup old games (Finished > 1 hour ago, Waiting > 24 hours ago)
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        await GameSession.deleteMany({
+            $or: [
+                { status: 'FINISHED', updatedAt: { $lt: oneHourAgo } },
+                { status: 'WAITING', createdAt: { $lt: twentyFourHoursAgo } }
+            ]
+        });
+
         const game = await GameSession.create({
             code,
             hostId: user.id,
