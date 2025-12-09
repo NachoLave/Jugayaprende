@@ -22,8 +22,41 @@ export default function HangmanGame({ data, player, code, onFinish }: HangmanGam
     const [status, setStatus] = useState<'PLAYING' | 'WON' | 'LOST'>('PLAYING');
     const [hasSubmitted, setHasSubmitted] = useState(false);
 
+    // Hints Logic
+    const [currentHint, setCurrentHint] = useState('');
+
+    useEffect(() => {
+        const hints = config.questions.hints || (config.questions.hint ? [config.questions.hint] : []);
+        if (hints.length > 0) {
+            // Pick a random hint that is different from the last one if possible? 
+            // For now, just pick random.
+            const randomHint = hints[Math.floor(Math.random() * hints.length)];
+            setCurrentHint(randomHint);
+        }
+    }, [config]);
+
+    // Timer Logic
+    const timeLimit = config.questions.timeLimit || 300; // Default 300s
+    const [timeLeft, setTimeLeft] = useState(timeLimit);
+
+    useEffect(() => {
+        if (status !== 'PLAYING') return;
+
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    finishGame('LOST');
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [status]);
+
     const word = (config.questions.word || '').toUpperCase();
-    const hint = config.questions.hint || '';
 
     // Check if everyone finished
     const allFinished = players.length > 0 && players.every((p: any) => p.finished);
@@ -44,7 +77,8 @@ export default function HangmanGame({ data, player, code, onFinish }: HangmanGam
         setStatus(result);
         if (!hasSubmitted) {
             setHasSubmitted(true);
-            const score = result === 'WON' ? 1000 - (mistakes * 100) : 0;
+            // Score calculation: Base 1000 - Mistakes * 100 + Time Bonus (1 point per second left)
+            const score = result === 'WON' ? Math.max(0, 1000 - (mistakes * 100) + timeLeft) : 0;
             if (result === 'WON') {
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             }
@@ -187,6 +221,15 @@ export default function HangmanGame({ data, player, code, onFinish }: HangmanGam
             {/* Header */}
             <div className="w-full max-w-3xl flex justify-between items-center mb-8">
                 <h1 className="text-2xl font-bold text-yellow-400">Ahorcado</h1>
+
+                {/* Timer */}
+                <div className={cn(
+                    "font-mono text-2xl font-bold px-4 py-1 rounded-lg border",
+                    timeLeft <= 30 ? "bg-red-900/50 text-red-400 border-red-500/50 animate-pulse" : "bg-white/10 text-white border-white/10"
+                )}>
+                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                </div>
+
                 <div className="text-gray-400">Errores: <span className={cn("font-bold", mistakes >= 4 ? "text-red-500" : "text-white")}>{mistakes} / {MAX_MISTAKES}</span></div>
             </div>
 
@@ -215,9 +258,9 @@ export default function HangmanGame({ data, player, code, onFinish }: HangmanGam
                 {/* Right: Word & Keyboard */}
                 <div className="flex flex-col items-center gap-8">
                     {/* Hint */}
-                    {hint && (
+                    {currentHint && (
                         <div className="bg-blue-900/30 px-4 py-2 rounded-lg text-blue-300 text-sm border border-blue-500/20">
-                            Pista: {hint}
+                            Pista: {currentHint}
                         </div>
                     )}
 

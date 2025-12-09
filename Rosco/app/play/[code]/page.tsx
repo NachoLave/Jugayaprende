@@ -139,7 +139,7 @@ export default function GamePage() {
     }
 
     if (type === 'BATTLESHIP') {
-        return <BattleshipGame config={gameData.config.questions} player={player!} code={code} onFinish={handleFinish} onScoreUpdate={handleScoreUpdate} />;
+        return <BattleshipGame data={gameData} player={player!} code={code} onFinish={handleFinish} onScoreUpdate={handleScoreUpdate} />;
     }
 
     if (type === 'MEMORY') {
@@ -151,7 +151,7 @@ export default function GamePage() {
     }
 
     if (type === 'WORD_SEARCH') {
-        return <WordSearchGame config={gameData.config.questions} player={player!} code={code} onFinish={handleFinish} />;
+        return <WordSearchGame data={gameData} player={player!} code={code} onFinish={handleFinish} />;
     }
 
     if (type === 'ROSCO') {

@@ -4,14 +4,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
-import { Target, X, Ship, Bomb, Waves, Skull } from 'lucide-react';
+import { Target, X, Ship, Bomb, Waves, Skull, Trophy } from 'lucide-react';
 
 interface BattleshipGameProps {
-    config: {
-        ships: { x: number, y: number, size: number, orientation: 'H' | 'V' }[];
-        pool: { question: string, answer: string, type?: 'TEXT' | 'CHOICE', options?: string[] }[];
-        timeLimit?: number;
-    };
+    data: any;
     player: string;
     code: string;
     onFinish: (score: number) => void;
@@ -81,7 +77,8 @@ const ShipExplosion = ({ ship, grid }: { ship: any, grid: Cell[][] }) => {
     );
 };
 
-export default function BattleshipGame({ config, onFinish, onScoreUpdate }: BattleshipGameProps) {
+export default function BattleshipGame({ data, player, onFinish, onScoreUpdate }: BattleshipGameProps) {
+    const config = data.config.questions;
     const [grid, setGrid] = useState<Cell[][]>([]);
     const [score, setScore] = useState(0);
     const [activeCell, setActiveCell] = useState<{ x: number, y: number } | null>(null);
@@ -92,8 +89,9 @@ export default function BattleshipGame({ config, onFinish, onScoreUpdate }: Batt
     const [sunkShipMessage, setSunkShipMessage] = useState<string | null>(null);
     const [sunkShip, setSunkShip] = useState<any>(null);
 
-    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const [timeLeft, setTimeLeft] = useState<number>(config.timeLimit || 300);
     const [gameActive, setGameActive] = useState(true);
+    const [finished, setFinished] = useState(false);
 
     useEffect(() => {
         if (grid.length === 0) {
@@ -101,27 +99,28 @@ export default function BattleshipGame({ config, onFinish, onScoreUpdate }: Batt
         }
     }, [config]);
 
-    // Initialize Timer
+    // Timer Sync Logic
     useEffect(() => {
-        setTimeLeft(config.timeLimit || 300);
-    }, [config.timeLimit]);
+        if (!data.startTime || finished) return;
 
-    // Timer Logic
-    useEffect(() => {
-        if (!gameActive || timeLeft === null) return;
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const start = new Date(data.startTime).getTime();
+            const elapsed = Math.floor((now - start) / 1000);
+            const limit = config.timeLimit || 300;
+            const remaining = Math.max(0, limit - elapsed);
 
-        if (timeLeft <= 0) {
-            setGameActive(false);
-            onFinish(score); // Finish with current score
-            return;
-        }
+            setTimeLeft(remaining);
 
-        const timer = setInterval(() => {
-            setTimeLeft(prev => (prev !== null ? prev - 1 : null));
+            if (remaining <= 0) {
+                setGameActive(false);
+                setFinished(true);
+                onFinish(score);
+            }
         }, 1000);
 
-        return () => clearInterval(timer);
-    }, [timeLeft, gameActive, score, onFinish]);
+        return () => clearInterval(interval);
+    }, [data.startTime, finished, score, config.timeLimit, onFinish]);
 
     // Sync score updates
     useEffect(() => {
@@ -133,7 +132,7 @@ export default function BattleshipGame({ config, onFinish, onScoreUpdate }: Batt
     const initializeGame = () => {
         const newGrid: Cell[][] = Array(10).fill(null).map((_, y) =>
             Array(10).fill(null).map((_, x) => {
-                const shipIndex = (config.ships || []).findIndex(s => {
+                const shipIndex = (config.ships || []).findIndex((s: any) => {
                     if (s.orientation === 'H') {
                         return y === s.y && x >= s.x && x < s.x + s.size;
                     } else {
@@ -151,7 +150,16 @@ export default function BattleshipGame({ config, onFinish, onScoreUpdate }: Batt
             })
         );
         setGrid(newGrid);
-        setScore(0);
+
+        // Restore score if available
+        const myPlayer = data.players.find((p: any) => p.name === player);
+        if (myPlayer) {
+            setScore(myPlayer.score || 0);
+            if (myPlayer.finished) {
+                setFinished(true);
+                setGameActive(false);
+            }
+        }
     };
 
     const handleCellClick = (x: number, y: number) => {
@@ -220,15 +228,46 @@ export default function BattleshipGame({ config, onFinish, onScoreUpdate }: Batt
             setFeedback(null);
             setIsFiring(false);
 
-            const totalShipSegments = config.ships.reduce((acc, s) => acc + s.size, 0);
+            const totalShipSegments = config.ships.reduce((acc: number, s: any) => acc + s.size, 0);
             const totalHits = newGrid.flat().filter(c => c.status === 'hit').length;
 
             if (totalHits === totalShipSegments) {
+                setFinished(true);
+                setGameActive(false);
                 onFinish(score + 1000);
             }
 
         }, 2000);
     };
+
+    if (finished) {
+        const sortedPlayers = [...data.players].sort((a: any, b: any) => b.score - a.score).slice(0, 5);
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white p-4">
+                <div className="max-w-md w-full bg-white/5 rounded-2xl p-8 border border-white/10 text-center animate-in zoom-in duration-500">
+                    <Trophy className="w-20 h-20 text-yellow-400 mx-auto mb-4" />
+                    <h1 className="text-3xl font-bold mb-2">¡Juego Terminado!</h1>
+                    <p className="text-xl text-gray-400 mb-8">Tu puntaje: <span className="text-yellow-400 font-bold">{score}</span></p>
+
+                    <h2 className="text-xl font-bold mb-4 text-left">Ranking Top 5</h2>
+                    <div className="space-y-3">
+                        {sortedPlayers.map((p: any, i: number) => (
+                            <div key={i} className={cn(
+                                "flex justify-between items-center p-3 rounded-lg",
+                                p.name === player ? "bg-blue-600/30 border border-blue-500/50" : "bg-white/5"
+                            )}>
+                                <div className="flex items-center gap-3">
+                                    <span className={cn("font-bold w-6", i === 0 ? "text-yellow-400" : "text-gray-500")}>#{i + 1}</span>
+                                    <span>{p.name}</span>
+                                </div>
+                                <span className="font-mono font-bold">{p.score}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
@@ -238,14 +277,12 @@ export default function BattleshipGame({ config, onFinish, onScoreUpdate }: Batt
                         <Ship className="w-6 h-6 text-blue-400" /> Batalla Naval
                     </h2>
                     <div className="flex gap-4">
-                        {timeLeft !== null && (
-                            <div className={cn(
-                                "px-4 py-2 rounded-lg border border-white/10 font-mono font-bold text-xl flex items-center gap-2",
-                                timeLeft < 30 ? "bg-red-900/50 text-red-400 animate-pulse" : "bg-white/10 text-white"
-                            )}>
-                                <span>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
-                            </div>
-                        )}
+                        <div className={cn(
+                            "px-4 py-2 rounded-lg border border-white/10 font-mono font-bold text-xl flex items-center gap-2",
+                            timeLeft < 30 ? "bg-red-900/50 text-red-400 animate-pulse" : "bg-white/10 text-white"
+                        )}>
+                            <span>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                        </div>
                         <div className="bg-white/10 px-4 py-2 rounded-lg border border-white/10">
                             <span className="text-gray-400 text-sm block">Puntaje</span>
                             <span className="text-xl font-bold text-cyan-400">{score}</span>

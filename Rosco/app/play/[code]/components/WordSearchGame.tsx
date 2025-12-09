@@ -1,16 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 import { Check, Trophy } from 'lucide-react';
 
 interface WordSearchGameProps {
-    config: {
-        words: string[];
-        gridSize: number;
-    };
+    data: any;
     player: string;
     code: string;
     onFinish: (score: number) => void;
@@ -24,24 +20,59 @@ interface Cell {
     found: boolean;
 }
 
-export default function WordSearchGame({ config, player, code, onFinish }: WordSearchGameProps) {
+export default function WordSearchGame({ data, player, onFinish }: WordSearchGameProps) {
+    const config = data.config.questions;
     const [grid, setGrid] = useState<Cell[][]>([]);
     const [words, setWords] = useState<{ word: string; found: boolean }[]>([]);
     const [isSelecting, setIsSelecting] = useState(false);
     const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
     const [selectedCells, setSelectedCells] = useState<{ x: number; y: number }[]>([]);
-    const [startTime] = useState(Date.now());
+
     const [finished, setFinished] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(config.timeLimit || 300);
+    const [status, setStatus] = useState<'PLAYING' | 'WON' | 'LOST'>('PLAYING');
 
     const gridSize = config.gridSize || 15;
 
     useEffect(() => {
         initializeGame();
-    }, []);
+    }, [config]);
+
+    // Timer Sync Logic
+    useEffect(() => {
+        if (!data.startTime || finished) return;
+
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const start = new Date(data.startTime).getTime();
+            const elapsed = Math.floor((now - start) / 1000);
+            const limit = config.timeLimit || 300;
+            const remaining = Math.max(0, limit - elapsed);
+
+            setTimeLeft(remaining);
+
+            if (remaining <= 0) {
+                setFinished(true);
+                setStatus('LOST');
+                onFinish(calculateScore(false));
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [data.startTime, finished, config.timeLimit, onFinish]);
+
+    const calculateScore = (won: boolean) => {
+        if (!data.startTime) return 0;
+        const now = Date.now();
+        const start = new Date(data.startTime).getTime();
+        const timeTaken = (now - start) / 1000;
+        // Base score 1000, minus 2 points per second taken. Min 0.
+        return won ? Math.max(0, Math.floor(1000 - timeTaken * 2)) : 0;
+    };
 
     const initializeGame = () => {
         // Initialize words
-        const initialWords = config.words.map(w => ({ word: w.toUpperCase(), found: false }));
+        const initialWords = config.words.map((w: string) => ({ word: w.toUpperCase(), found: false }));
         setWords(initialWords);
 
         // Generate Grid
@@ -59,7 +90,7 @@ export default function WordSearchGame({ config, player, code, onFinish }: WordS
             { x: 1, y: 1 }, // Diagonal
         ];
 
-        initialWords.forEach(({ word }) => {
+        initialWords.forEach(({ word }: { word: string }) => {
             let placed = false;
             let attempts = 0;
             while (!placed && attempts < 100) {
@@ -105,17 +136,24 @@ export default function WordSearchGame({ config, player, code, onFinish }: WordS
         }
 
         setGrid(newGrid);
+
+        // Restore state if player already finished
+        const myPlayer = data.players.find((p: any) => p.name === player);
+        if (myPlayer && myPlayer.finished) {
+            setFinished(true);
+            setStatus('WON'); // Assuming if finished it's won, or check score > 0
+        }
     };
 
     const handleMouseDown = (x: number, y: number) => {
-        if (finished) return;
+        if (finished || status !== 'PLAYING') return;
         setIsSelecting(true);
         setSelectionStart({ x, y });
         setSelectedCells([{ x, y }]);
     };
 
     const handleMouseEnter = (x: number, y: number) => {
-        if (!isSelecting || !selectionStart || finished) return;
+        if (!isSelecting || !selectionStart || finished || status !== 'PLAYING') return;
 
         // Calculate line
         const dx = x - selectionStart.x;
@@ -139,7 +177,7 @@ export default function WordSearchGame({ config, player, code, onFinish }: WordS
     };
 
     const handleMouseUp = () => {
-        if (!isSelecting || finished) return;
+        if (!isSelecting || finished || status !== 'PLAYING') return;
         setIsSelecting(false);
 
         // Check word
@@ -175,8 +213,8 @@ export default function WordSearchGame({ config, player, code, onFinish }: WordS
 
     const handleWin = () => {
         setFinished(true);
-        const timeTaken = (Date.now() - startTime) / 1000;
-        const score = Math.max(0, Math.floor(1000 - timeTaken * 2)); // Simple scoring
+        setStatus('WON');
+        const score = calculateScore(true);
         confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
         setTimeout(() => onFinish(score), 2000);
     };
@@ -187,12 +225,43 @@ export default function WordSearchGame({ config, player, code, onFinish }: WordS
     };
 
     if (finished) {
+        const sortedPlayers = [...data.players].sort((a: any, b: any) => b.score - a.score).slice(0, 5);
+        const myScore = data.players.find((p: any) => p.name === player)?.score || 0;
+
         return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white p-4">
-                <div className="text-center animate-in zoom-in duration-500">
-                    <Trophy className="w-20 h-20 text-yellow-400 mx-auto mb-4" />
-                    <h1 className="text-4xl font-bold mb-2">¡Sopa Completada!</h1>
-                    <p className="text-xl text-gray-400">¡Encontraste todas las palabras!</p>
+                <div className="max-w-md w-full bg-white/5 rounded-2xl p-8 border border-white/10 text-center animate-in zoom-in duration-500">
+                    {status === 'WON' ? (
+                        <>
+                            <Trophy className="w-20 h-20 text-yellow-400 mx-auto mb-4" />
+                            <h1 className="text-4xl font-bold mb-2">¡Sopa Completada!</h1>
+                            <p className="text-xl text-gray-400 mb-8">¡Encontraste todas las palabras!</p>
+                        </>
+                    ) : (
+                        <>
+                            <div className="text-6xl mb-4">⏰</div>
+                            <h1 className="text-4xl font-bold mb-2 text-red-500">¡Tiempo Agotado!</h1>
+                            <p className="text-xl text-gray-400 mb-8">Se acabó el tiempo.</p>
+                        </>
+                    )}
+
+                    <p className="text-xl text-gray-400 mb-8">Tu puntaje: <span className="text-yellow-400 font-bold">{myScore}</span></p>
+
+                    <h2 className="text-xl font-bold mb-4 text-left">Ranking Top 5</h2>
+                    <div className="space-y-3">
+                        {sortedPlayers.map((p: any, i: number) => (
+                            <div key={i} className={cn(
+                                "flex justify-between items-center p-3 rounded-lg",
+                                p.name === player ? "bg-blue-600/30 border border-blue-500/50" : "bg-white/5"
+                            )}>
+                                <div className="flex items-center gap-3">
+                                    <span className={cn("font-bold w-6", i === 0 ? "text-yellow-400" : "text-gray-500")}>#{i + 1}</span>
+                                    <span>{p.name}</span>
+                                </div>
+                                <span className="font-mono font-bold">{p.score}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         );
@@ -203,6 +272,16 @@ export default function WordSearchGame({ config, player, code, onFinish }: WordS
             className="min-h-screen bg-slate-900 text-white p-4 flex flex-col items-center select-none"
             onMouseUp={handleMouseUp}
         >
+            <div className="w-full max-w-6xl flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold text-green-400">Sopa de Letras</h1>
+                <div className={cn(
+                    "font-mono text-2xl font-bold px-4 py-1 rounded-lg border",
+                    timeLeft <= 30 ? "bg-red-900/50 text-red-400 border-red-500/50 animate-pulse" : "bg-white/10 text-white border-white/10"
+                )}>
+                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                </div>
+            </div>
+
             <div className="w-full max-w-6xl flex flex-col md:flex-row gap-8 items-start">
                 {/* Grid */}
                 <div className="flex-1 w-full flex justify-center">

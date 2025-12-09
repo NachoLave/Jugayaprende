@@ -32,11 +32,14 @@ export default function CreateGamePage() {
 
     // Hangman State
     const [hangmanWord, setHangmanWord] = useState('');
-    const [hangmanHint, setHangmanHint] = useState('');
+    const [hangmanHints, setHangmanHints] = useState<string[]>([]);
+    const [newHangmanHint, setNewHangmanHint] = useState('');
+    const [hangmanTimeLimit, setHangmanTimeLimit] = useState(300);
 
     // Word Search State
     const [wordSearchWords, setWordSearchWords] = useState<string[]>([]);
     const [wordSearchGridSize, setWordSearchGridSize] = useState(15);
+    const [wordSearchTimeLimit, setWordSearchTimeLimit] = useState(300);
     const [newWord, setNewWord] = useState('');
 
     // Memory State
@@ -75,9 +78,9 @@ export default function CreateGamePage() {
             title,
             type: gameType,
             questions: gameType === 'ROSCO' ? questions :
-                gameType === 'HANGMAN' ? { word: hangmanWord.toUpperCase(), hint: hangmanHint } :
+                gameType === 'HANGMAN' ? { word: hangmanWord.toUpperCase(), hints: hangmanHints, timeLimit: hangmanTimeLimit } :
                     (gameType === 'TRIVIA' || gameType === 'KAHOOT') ? { questions: triviaQuestions } :
-                        gameType === 'WORD_SEARCH' ? { words: wordSearchWords, gridSize: wordSearchGridSize } :
+                        gameType === 'WORD_SEARCH' ? { words: wordSearchWords, gridSize: wordSearchGridSize, timeLimit: wordSearchTimeLimit } :
                             gameType === 'MEMORY' ? { pairs: memoryPairs } :
                                 gameType === 'BATTLESHIP' ? { ships: battleshipShips, pool: battleshipQuestions } : []
         };
@@ -245,6 +248,20 @@ export default function CreateGamePage() {
                         />
                     </div>
 
+                    {/* Time Limit */}
+                    <div className="bg-card border border-white/10 rounded-xl p-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Tiempo Límite (segundos)</label>
+                        <input
+                            type="number"
+                            min="30"
+                            max="600"
+                            value={hangmanTimeLimit}
+                            onChange={(e) => setHangmanTimeLimit(parseInt(e.target.value))}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">Tiempo para adivinar la palabra.</p>
+                    </div>
+
                     {/* Word Input */}
                     <div className="bg-card border border-white/10 rounded-xl p-6 space-y-6">
                         <div>
@@ -260,14 +277,54 @@ export default function CreateGamePage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Pista (Opcional)</label>
-                            <input
-                                type="text"
-                                value={hangmanHint}
-                                onChange={(e) => setHangmanHint(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"
-                                placeholder="Ej: Es un animal muy grande..."
-                            />
+                            <label className="block text-sm font-medium text-gray-400 mb-2">Pistas (Opcional)</label>
+                            <div className="flex gap-2 mb-4">
+                                <input
+                                    type="text"
+                                    value={newHangmanHint}
+                                    onChange={(e) => setNewHangmanHint(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            if (newHangmanHint.trim()) {
+                                                setHangmanHints([...hangmanHints, newHangmanHint.trim()]);
+                                                setNewHangmanHint('');
+                                            }
+                                        }
+                                    }}
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                                    placeholder="Ej: Es un animal muy grande..."
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (newHangmanHint.trim()) {
+                                            setHangmanHints([...hangmanHints, newHangmanHint.trim()]);
+                                            setNewHangmanHint('');
+                                        }
+                                    }}
+                                    disabled={!newHangmanHint.trim()}
+                                    className="bg-purple-600 hover:bg-purple-500 text-white px-4 rounded-lg font-bold disabled:opacity-50 transition-colors"
+                                >
+                                    Agregar
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {hangmanHints.map((hint, i) => (
+                                    <div key={i} className="bg-purple-900/20 border border-purple-500/20 p-3 rounded-lg flex items-center justify-between group">
+                                        <span className="text-purple-200">{hint}</span>
+                                        <button
+                                            onClick={() => setHangmanHints(hangmanHints.filter((_, idx) => idx !== i))}
+                                            className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                ))}
+                                {hangmanHints.length === 0 && (
+                                    <p className="text-gray-500 italic text-sm">No hay pistas agregadas.</p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -341,6 +398,20 @@ export default function CreateGamePage() {
                             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none"
                             placeholder="Ej: Sopa de Letras de Países"
                         />
+                    </div>
+
+                    {/* Time Limit */}
+                    <div className="bg-card border border-white/10 rounded-xl p-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Tiempo Límite (segundos)</label>
+                        <input
+                            type="number"
+                            min="60"
+                            max="1200"
+                            value={wordSearchTimeLimit}
+                            onChange={(e) => setWordSearchTimeLimit(parseInt(e.target.value))}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">Tiempo para encontrar todas las palabras.</p>
                     </div>
 
                     {/* Grid Size */}

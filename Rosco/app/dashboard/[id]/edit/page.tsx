@@ -157,7 +157,19 @@ export default function EditGamePage() {
     }
 
     if (game?.type === 'HANGMAN') {
-        // Inline Hangman Editor (simplified)
+        // Initialize hints if not present (migration)
+        const hints = game.questions.hints || (game.questions.hint ? [game.questions.hint] : []);
+        const [localHints, setLocalHints] = useState<string[]>(hints);
+        const [newHint, setNewHint] = useState('');
+
+        // Sync local hints to game state when changed
+        useEffect(() => {
+            setGame((prev: any) => ({
+                ...prev,
+                questions: { ...prev.questions, hints: localHints }
+            }));
+        }, [localHints]);
+
         return (
             <div className="min-h-screen bg-background p-8">
                 <div className="max-w-4xl mx-auto space-y-8">
@@ -167,7 +179,7 @@ export default function EditGamePage() {
                         </button>
                         <h1 className="text-3xl font-bold text-white">Editar Ahorcado</h1>
                         <button
-                            onClick={() => handleGenericSave({ title: game.title, questions: game.questions })}
+                            onClick={() => handleGenericSave({ title: game.title, questions: { ...game.questions, hints: localHints } })}
                             disabled={saving || !game.title.trim() || !game.questions.word.trim()}
                             className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
                         >
@@ -186,6 +198,20 @@ export default function EditGamePage() {
                         />
                     </div>
 
+                    {/* Time Limit */}
+                    <div className="bg-card border border-white/10 rounded-xl p-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Tiempo Límite (segundos)</label>
+                        <input
+                            type="number"
+                            min="30"
+                            max="600"
+                            value={game.questions.timeLimit || 300}
+                            onChange={(e) => setGame({ ...game, questions: { ...game.questions, timeLimit: parseInt(e.target.value) } })}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">Tiempo para adivinar la palabra.</p>
+                    </div>
+
                     <div className="bg-card border border-white/10 rounded-xl p-6 space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-2">Palabra o Frase Oculta</label>
@@ -196,14 +222,182 @@ export default function EditGamePage() {
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none font-mono text-xl tracking-wider uppercase"
                             />
                         </div>
+
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Pista (Opcional)</label>
+                            <label className="block text-sm font-medium text-gray-400 mb-2">Pistas (Opcional)</label>
+                            <div className="flex gap-2 mb-4">
+                                <input
+                                    type="text"
+                                    value={newHint}
+                                    onChange={(e) => setNewHint(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            if (newHint.trim()) {
+                                                setLocalHints([...localHints, newHint.trim()]);
+                                                setNewHint('');
+                                            }
+                                        }
+                                    }}
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                                    placeholder="Ej: Es un animal muy grande..."
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (newHint.trim()) {
+                                            setLocalHints([...localHints, newHint.trim()]);
+                                            setNewHint('');
+                                        }
+                                    }}
+                                    disabled={!newHint.trim()}
+                                    className="bg-purple-600 hover:bg-purple-500 text-white px-4 rounded-lg font-bold disabled:opacity-50 transition-colors"
+                                >
+                                    Agregar
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {localHints.map((hint, i) => (
+                                    <div key={i} className="bg-purple-900/20 border border-purple-500/20 p-3 rounded-lg flex items-center justify-between group">
+                                        <span className="text-purple-200">{hint}</span>
+                                        <button
+                                            onClick={() => setLocalHints(localHints.filter((_, idx) => idx !== i))}
+                                            className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                ))}
+                                {localHints.length === 0 && (
+                                    <p className="text-gray-500 italic text-sm">No hay pistas agregadas.</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (game?.type === 'WORD_SEARCH') {
+        const [newWord, setNewWord] = useState('');
+
+        return (
+            <div className="min-h-screen bg-background p-8">
+                <div className="max-w-4xl mx-auto space-y-8">
+                    <div className="flex items-center justify-between">
+                        <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                            <ArrowLeft className="w-5 h-5" /> Volver
+                        </button>
+                        <h1 className="text-3xl font-bold text-white">Editar Sopa de Letras</h1>
+                        <button
+                            onClick={() => handleGenericSave({ title: game.title, questions: game.questions })}
+                            disabled={saving || !game.title.trim() || (game.questions.words && game.questions.words.length < 1)}
+                            className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            Guardar Cambios
+                        </button>
+                    </div>
+
+                    <div className="bg-card border border-white/10 rounded-xl p-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Título del Juego</label>
+                        <input
+                            type="text"
+                            value={game.title}
+                            onChange={(e) => setGame({ ...game, title: e.target.value })}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none"
+                        />
+                    </div>
+
+                    {/* Time Limit */}
+                    <div className="bg-card border border-white/10 rounded-xl p-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Tiempo Límite (segundos)</label>
+                        <input
+                            type="number"
+                            min="60"
+                            max="1200"
+                            value={game.questions.timeLimit || 300}
+                            onChange={(e) => setGame({ ...game, questions: { ...game.questions, timeLimit: parseInt(e.target.value) } })}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">Tiempo para encontrar todas las palabras.</p>
+                    </div>
+
+                    {/* Grid Size */}
+                    <div className="bg-card border border-white/10 rounded-xl p-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Tamaño de la Cuadrícula ({game.questions.gridSize}x{game.questions.gridSize})</label>
+                        <input
+                            type="range"
+                            min="10"
+                            max="20"
+                            value={game.questions.gridSize || 15}
+                            onChange={(e) => setGame({ ...game, questions: { ...game.questions, gridSize: parseInt(e.target.value) } })}
+                            className="w-full accent-green-500"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-2">
+                            <span>10x10</span>
+                            <span>15x15</span>
+                            <span>20x20</span>
+                        </div>
+                    </div>
+
+                    {/* Words Input */}
+                    <div className="bg-card border border-white/10 rounded-xl p-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-4">Palabras a Encontrar</label>
+
+                        <div className="flex gap-2 mb-6">
                             <input
                                 type="text"
-                                value={game.questions.hint || ''}
-                                onChange={(e) => setGame({ ...game, questions: { ...game.questions, hint: e.target.value } })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                                value={newWord}
+                                onChange={(e) => setNewWord(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const words = game.questions.words || [];
+                                        if (newWord.trim() && newWord.length <= (game.questions.gridSize || 15)) {
+                                            setGame({ ...game, questions: { ...game.questions, words: [...words, newWord.trim()] } });
+                                            setNewWord('');
+                                        }
+                                    }
+                                }}
+                                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none font-mono tracking-wider"
+                                placeholder="NUEVA PALABRA"
+                                maxLength={game.questions.gridSize || 15}
                             />
+                            <button
+                                onClick={() => {
+                                    const words = game.questions.words || [];
+                                    if (newWord.trim() && newWord.length <= (game.questions.gridSize || 15)) {
+                                        setGame({ ...game, questions: { ...game.questions, words: [...words, newWord.trim()] } });
+                                        setNewWord('');
+                                    }
+                                }}
+                                disabled={!newWord.trim() || newWord.length > (game.questions.gridSize || 15)}
+                                className="bg-white/10 hover:bg-white/20 text-white px-6 rounded-lg font-bold disabled:opacity-50 transition-colors"
+                            >
+                                Agregar
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {(game.questions.words || []).map((word: string, i: number) => (
+                                <div key={i} className="bg-green-900/30 border border-green-500/30 text-green-400 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                                    <span className="font-mono font-bold">{word}</span>
+                                    <button
+                                        onClick={() => {
+                                            const words = game.questions.words || [];
+                                            setGame({ ...game, questions: { ...game.questions, words: words.filter((_: any, idx: number) => idx !== i) } });
+                                        }}
+                                        className="hover:text-white transition-colors"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                            {(!game.questions.words || game.questions.words.length === 0) && (
+                                <p className="text-gray-500 italic w-full text-center py-4">No hay palabras agregadas aún</p>
+                            )}
                         </div>
                     </div>
                 </div>

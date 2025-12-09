@@ -45,7 +45,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ code: st
     try {
         await dbConnect();
         const { code } = await params;
-        const { status, reviewIndex, triviaAction } = await req.json();
+        const body = await req.json();
+        const { status, reviewIndex, triviaAction, player, score, kahootAction } = body;
 
         const game = await GameSession.findOne({ code });
         if (!game) return NextResponse.json({ message: 'Not found' }, { status: 404 });
@@ -61,7 +62,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ code: st
         }
 
         // Handle Score Update
-        const { player, score } = await req.json();
         if (player && score !== undefined) {
             const playerIndex = game.players.findIndex((p: any) => p.name === player);
             if (playerIndex !== -1) {
@@ -88,7 +88,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ code: st
 
         // Handle Kahoot-specific actions
         if (config.type === 'KAHOOT') {
-            const { kahootAction } = await req.json();
             if (kahootAction) {
                 if (kahootAction === 'START_GAME') {
                     game.status = 'PLAYING';

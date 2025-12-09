@@ -76,6 +76,11 @@ export default function HostPage() {
 
     const { config, players, status, triviaState } = gameData;
 
+    // KAHOOT HOST VIEW (Handles its own Lobby)
+    if (config.type === 'KAHOOT') {
+        return <HostKahootGame gameData={gameData} code={code} />;
+    }
+
     if (status === 'WAITING') {
         return (
             <div className="min-h-screen bg-slate-900 text-white p-8">
@@ -268,11 +273,53 @@ export default function HostPage() {
 
     // BATTLESHIP HOST VIEW
     if (config.type === 'BATTLESHIP') {
-        // Calculate time left
         const timeLimit = config.questions.timeLimit || 300;
         const startTime = gameData.startTime ? new Date(gameData.startTime).getTime() : currentTime;
         const elapsed = Math.floor((currentTime - startTime) / 1000);
         const timeLeft = Math.max(0, timeLimit - elapsed);
+
+        if (timeLeft <= 0 || status === 'FINISHED') {
+            return (
+                <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-8">
+                    <div className="max-w-4xl w-full text-center animate-in zoom-in duration-500">
+                        <Trophy className="w-24 h-24 text-yellow-400 mx-auto mb-6" />
+                        <h1 className="text-5xl font-bold mb-2">¡Juego Terminado!</h1>
+                        <p className="text-2xl text-gray-400 mb-12">Resultados Finales - Batalla Naval</p>
+
+                        <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto">
+                            {players.sort((a: any, b: any) => b.score - a.score).slice(0, 5).map((p: any, i: number) => (
+                                <div key={i} className={cn(
+                                    "flex justify-between items-center p-6 rounded-2xl border-2 shadow-xl transform hover:scale-105 transition-all",
+                                    i === 0 ? "bg-yellow-900/40 border-yellow-500/50" :
+                                        i === 1 ? "bg-gray-800/60 border-gray-500/50" :
+                                            i === 2 ? "bg-orange-900/40 border-orange-500/50" : "bg-white/5 border-white/10"
+                                )}>
+                                    <div className="flex items-center gap-6">
+                                        <div className={cn(
+                                            "w-12 h-12 rounded-full flex items-center justify-center font-bold text-2xl shadow-lg",
+                                            i === 0 ? "bg-yellow-500 text-black" :
+                                                i === 1 ? "bg-gray-400 text-black" :
+                                                    i === 2 ? "bg-orange-700 text-white" : "bg-gray-700 text-gray-300"
+                                        )}>
+                                            {i + 1}
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="font-bold text-2xl block">{p.name}</span>
+                                            {p.finished && <span className="text-sm text-green-400 font-bold">¡TERMINADO!</span>}
+                                        </div>
+                                    </div>
+                                    <span className="font-mono font-bold text-4xl text-yellow-400">{p.score}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button onClick={() => router.push('/dashboard')} className="mt-12 text-gray-400 hover:text-white text-lg underline underline-offset-4">
+                            Volver al Dashboard
+                        </button>
+                    </div>
+                </div>
+            );
+        }
 
         return (
             <div className="min-h-screen bg-slate-900 text-white p-8">
@@ -312,18 +359,13 @@ export default function HostPage() {
 
                             <div className="space-y-4">
                                 {players.sort((a: any, b: any) => {
-                                    // 1. Sort by Finished status (Finished first)
                                     if (a.finished && !b.finished) return -1;
                                     if (!a.finished && b.finished) return 1;
-
-                                    // 2. If both finished, sort by Time Taken (finishedAt)
                                     if (a.finished && b.finished) {
                                         const timeA = new Date(a.finishedAt).getTime();
                                         const timeB = new Date(b.finishedAt).getTime();
                                         return timeA - timeB;
                                     }
-
-                                    // 3. If neither finished, sort by Score (desc)
                                     return b.score - a.score;
                                 }).map((p: any, i: number) => (
                                     <div key={i} className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
@@ -470,6 +512,54 @@ export default function HostPage() {
 
     // WORD SEARCH HOST VIEW
     if (config.type === 'WORD_SEARCH') {
+        const timeLimit = config.questions.timeLimit || 300;
+        const startTime = gameData.startTime ? new Date(gameData.startTime).getTime() : currentTime;
+        const elapsed = Math.floor((currentTime - startTime) / 1000);
+        const timeLeft = Math.max(0, timeLimit - elapsed);
+
+        if (timeLeft <= 0 || status === 'FINISHED') {
+            return (
+                <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-8">
+                    <div className="max-w-4xl w-full text-center animate-in zoom-in duration-500">
+                        <Trophy className="w-24 h-24 text-yellow-400 mx-auto mb-6" />
+                        <h1 className="text-5xl font-bold mb-2">¡Juego Terminado!</h1>
+                        <p className="text-2xl text-gray-400 mb-12">Resultados Finales - Sopa de Letras</p>
+
+                        <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto">
+                            {players.sort((a: any, b: any) => b.score - a.score).slice(0, 5).map((p: any, i: number) => (
+                                <div key={i} className={cn(
+                                    "flex justify-between items-center p-6 rounded-2xl border-2 shadow-xl transform hover:scale-105 transition-all",
+                                    i === 0 ? "bg-yellow-900/40 border-yellow-500/50" :
+                                        i === 1 ? "bg-gray-800/60 border-gray-500/50" :
+                                            i === 2 ? "bg-orange-900/40 border-orange-500/50" : "bg-white/5 border-white/10"
+                                )}>
+                                    <div className="flex items-center gap-6">
+                                        <div className={cn(
+                                            "w-12 h-12 rounded-full flex items-center justify-center font-bold text-2xl shadow-lg",
+                                            i === 0 ? "bg-yellow-500 text-black" :
+                                                i === 1 ? "bg-gray-400 text-black" :
+                                                    i === 2 ? "bg-orange-700 text-white" : "bg-gray-700 text-gray-300"
+                                        )}>
+                                            {i + 1}
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="font-bold text-2xl block">{p.name}</span>
+                                            {p.finished && <span className="text-sm text-green-400 font-bold">¡TERMINADO!</span>}
+                                        </div>
+                                    </div>
+                                    <span className="font-mono font-bold text-4xl text-yellow-400">{p.score}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button onClick={() => router.push('/dashboard')} className="mt-12 text-gray-400 hover:text-white text-lg underline underline-offset-4">
+                            Volver al Dashboard
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="min-h-screen bg-slate-900 text-white p-8">
                 <div className="max-w-4xl mx-auto">
@@ -478,11 +568,22 @@ export default function HostPage() {
                             <h1 className="text-4xl font-bold mb-2">{config.title}</h1>
                             <p className="text-xl text-gray-400">Código: <span className="text-yellow-400 font-mono text-3xl font-bold ml-2">{code}</span></p>
                         </div>
-                        <div className="text-right">
-                            <div className="text-sm text-gray-400 mb-1">Estado</div>
-                            <div className="text-green-400 font-bold text-xl flex items-center gap-2">
-                                <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                                EN JUEGO
+                        <div className="flex items-center gap-6">
+                            {/* Timer Display */}
+                            <div className={cn(
+                                "px-6 py-3 rounded-xl border border-white/10 font-mono font-bold text-3xl flex items-center gap-3 shadow-lg",
+                                timeLeft < 30 ? "bg-red-900/50 text-red-400 animate-pulse border-red-500/50" : "bg-white/5 text-white"
+                            )}>
+                                <span className="text-sm text-gray-400 font-sans font-normal">TIEMPO</span>
+                                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                            </div>
+
+                            <div className="text-right">
+                                <div className="text-sm text-gray-400 mb-1">Estado</div>
+                                <div className="text-green-400 font-bold text-xl flex items-center gap-2">
+                                    <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                                    EN JUEGO
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -634,10 +735,7 @@ export default function HostPage() {
         );
     }
 
-    // KAHOOT HOST VIEW
-    if (config.type === 'KAHOOT') {
-        return <HostKahootGame gameData={gameData} code={code} />;
-    }
+
 
     return <div className="min-h-screen bg-slate-900 text-white p-10">Vista de host para {config.type} no implementada.</div>;
 }
